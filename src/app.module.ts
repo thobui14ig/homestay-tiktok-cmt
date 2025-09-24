@@ -7,6 +7,8 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ProxyModule } from './modules/proxy/proxy.module';
 import { ProxyEntity } from './modules/proxy/entities/proxy.entity';
+import { LinkModule } from './modules/links/links.module';
+import { LinkEntity } from './modules/links/entities/links.entity';
 
 @Module({
   imports: [
@@ -23,12 +25,13 @@ import { ProxyEntity } from './modules/proxy/entities/proxy.entity';
         username: configService.get<string>('DB_USER_NAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [ProxyEntity],
+        entities: [ProxyEntity, LinkEntity],
 
       }),
     }),
     ProxyModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    LinkModule
   ],
   controllers: [AppController],
   providers: [AppService],
