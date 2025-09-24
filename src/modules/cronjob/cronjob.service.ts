@@ -56,7 +56,6 @@ export class CronjobService {
           })
         )
         const comments = response.data.comments
-        console.log(comments)
         const newestComment = (comments??[]).reduce((latest, current) => {
           return current.create_time > latest.create_time ? current : latest;
         });
