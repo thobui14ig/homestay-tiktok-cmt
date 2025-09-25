@@ -73,7 +73,7 @@ export class CronjobService {
           commentMessage: newestComment.text,
           commentCreatedAt: dayjs(newestComment?.create_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss'),
         }
-
+        console.log(res)
         if (res) {
             const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
             const isExistKey = await this.redisService.checkAndUpdateKey(key)
@@ -82,7 +82,7 @@ export class CronjobService {
             }
         }
       } catch (error) {
-        console.log(`Crawl comment with postId ${link.postId} Error.`, error.message)
+        console.log(`Crawl comment with postId ${link.postId} Error.`, error)
       } finally {
         if (link.delayTime) {
           await delay(5 * 1000)
