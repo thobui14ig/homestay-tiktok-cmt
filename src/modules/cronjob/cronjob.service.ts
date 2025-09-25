@@ -53,6 +53,7 @@ export class CronjobService {
 
       try {
         const proxy = await this.proxyService.getRandomProxy()
+        console.log(proxy)
         if (!proxy) continue;
         const httpsAgent = getHttpAgent(proxy)
         const response = await firstValueFrom(
