@@ -16,5 +16,8 @@ services:
       - DB_DATABASE=homstay
       - NODE_OPTIONS=--max-old-space-size=4096
       - ENV=production
+      - REDIS_HOST=103.67.196.23
+      - REDIS_PORT=6379
+      - REDIS_TYPE=single
     ports:
       - '5000:5000'
