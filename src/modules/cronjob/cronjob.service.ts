@@ -57,9 +57,10 @@ export class CronjobService {
         if (!proxy) continue;
         const httpsAgent = getHttpAgent(proxy)
         const response = await firstValueFrom(
-          this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`, {
-            httpsAgent
-          })
+          // this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`, {
+          //   httpsAgent
+          // })
+          this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`)
         )
         const comments = response.data.comments
         const newestComment = (comments??[]).reduce((latest, current) => {
