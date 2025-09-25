@@ -11,4 +11,5 @@ export interface ICommentFromTiktok {
     phoneNumber: string;
     userIdComment: string;
     commentCreatedAt: string;
+    postId: string
 }

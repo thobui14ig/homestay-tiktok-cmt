@@ -3,9 +3,12 @@ import { CronjobService } from './cronjob.service';
 import { ProxyModule } from '../proxy/proxy.module';
 import { HttpModule } from '@nestjs/axios';
 import { LinkModule } from '../links/links.module';
+import { RedisModule } from 'src/infra/redis/redis.module';
+import { SocketModule } from 'src/infra/socket/socket.module';
+import { CommentsModule } from '../comments/comments.module';
 
 @Module({
-  imports: [ProxyModule, HttpModule, LinkModule],
+  imports: [ProxyModule, HttpModule, LinkModule, RedisModule, SocketModule, CommentsModule],
   controllers: [],
   providers: [CronjobService],
 })

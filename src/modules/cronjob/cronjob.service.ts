@@ -4,12 +4,16 @@ import { ProxyService } from '../proxy/proxy.service';
 import { delay, extractPhoneNumber, getHttpAgent } from 'src/common/utils/helper';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
-import { ICommentFromTiktok, IGetInfoFromTiktok } from './cronjob.service.i';
 
 import utc from 'dayjs/plugin/utc';
 import dayjs from 'dayjs';
 import { LinkService } from '../links/links.service';
 import { LinkEntity } from '../links/entities/links.entity';
+import { RedisService } from 'src/infra/redis/redis.service';
+import { ICommentFromTiktok } from './cronjob.service.i';
+import { CommentEntity } from '../comments/entities/comment.entity';
+import { CommentsModule } from '../comments/comments.module';
+import { CommentsService } from '../comments/comments.service';
 dayjs.extend(utc);
 
 @Injectable()
@@ -20,7 +24,8 @@ export class CronjobService {
     private proxyService: ProxyService, 
     private readonly httpService: HttpService,
     private linkService: LinkService, 
-
+    private redisService: RedisService,
+    private commentService: CommentsService
   ) { }
 
   @Cron(CronExpression.EVERY_5_SECONDS)
@@ -57,25 +62,47 @@ export class CronjobService {
         )
         const comments = response.data.comments
         const newestComment = (comments??[]).reduce((latest, current) => {
-          return current.create_time > latest.create_time ? current : latest;
+          return current?.create_time > latest?.create_time ? current : latest;
         });
-
         const res: ICommentFromTiktok = {
+          postId: link.postId,
           userIdComment: newestComment.user.uid,
           userNameComment: newestComment.user.unique_id,
           commentId: newestComment.cid,
           phoneNumber: extractPhoneNumber(newestComment.text),
           commentMessage: newestComment.text,
-          commentCreatedAt: dayjs(newestComment?.created_time).utc().format('YYYY-MM-DD HH:mm:ss'),
+          commentCreatedAt: dayjs(newestComment?.create_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss'),
         }
-        console.log("🚀 ~ CronjobService ~ handleCron ~ newestComment:", res)
+
+        if (res) {
+            const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
+            const isExistKey = await this.redisService.checkAndUpdateKey(key)
+            if (!isExistKey) {
+              await this.insertComment(res, link)
+            }
+        }
       } catch (error) {
-        console.log(`Crawl comment with postId ${link.postId} Error.`, error)
+        console.log(`Crawl comment with postId ${link.postId} Error.`, error.message)
       } finally {
         if (link.delayTime) {
           await delay(5 * 1000)
         }
       }
     }
+  }
+
+  insertComment(comment: ICommentFromTiktok, link: LinkEntity) {
+    const commentEntity: Partial<CommentEntity> = {
+        cmtId: comment.commentId,
+        linkId: link.id,
+        postId: link.postId,
+        userId: link.userId,
+        uid: comment.userIdComment,
+        message: comment.commentMessage,
+        phoneNumber: comment.phoneNumber,
+        name: comment.userNameComment,
+        timeCreated: comment.commentCreatedAt as any,
+    }
+    return this.commentService.insert(commentEntity)
   }
 }
