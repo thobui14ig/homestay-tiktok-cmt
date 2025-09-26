@@ -90,9 +90,7 @@ export class CronjobService {
       } catch (error) {
         console.log(`Crawl comment with postId ${link.postId} Error.`, error)
       } finally {
-        if (link.delayTime) {
           await delay(5 * 1000)
-        }
       }
     }
   }
