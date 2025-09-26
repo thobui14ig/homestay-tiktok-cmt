@@ -62,26 +62,31 @@ export class CronjobService {
           this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`)
         )
         const comments = response.data.comments
-        const newestComment = (comments ?? []).reduce((latest, current) => {
-          return current?.create_time > latest?.create_time ? current : latest;
+        const newestComment = comments.reduce((latest, current) => {
+          if (!latest) return current; // nếu lần đầu thì lấy current
+          return current.create_time > latest.create_time ? current : latest;
         }, null);
-        const res: ICommentFromTiktok = {
-          postId: link.postId,
-          userIdComment: newestComment.user.uid,
-          userNameComment: newestComment.user.unique_id,
-          commentId: newestComment.cid,
-          phoneNumber: extractPhoneNumber(newestComment.text),
-          commentMessage: newestComment.text,
-          commentCreatedAt: dayjs(newestComment?.create_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss'),
+
+        if (newestComment) {
+          const res: ICommentFromTiktok = {
+            postId: link.postId,
+            userIdComment: newestComment.user.uid,
+            userNameComment: newestComment.user.unique_id,
+            commentId: newestComment.cid,
+            phoneNumber: extractPhoneNumber(newestComment.text),
+            commentMessage: newestComment.text,
+            commentCreatedAt: dayjs(newestComment?.create_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss'),
+          }
+          console.log(res)
+          if (res) {
+              const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
+              const isExistKey = await this.redisService.checkAndUpdateKey(key)
+              if (!isExistKey) {
+                await this.insertComment(res, link)
+              }
+          }
         }
-        console.log(res)
-        if (res) {
-            const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
-            const isExistKey = await this.redisService.checkAndUpdateKey(key)
-            if (!isExistKey) {
-              await this.insertComment(res, link)
-            }
-        }
+
       } catch (error) {
         console.log(`Crawl comment with postId ${link.postId} Error.`, error)
       } finally {
