@@ -53,7 +53,6 @@ export class CronjobService {
 
       try {
         const proxy = await this.proxyService.getRandomProxy()
-        console.log(proxy)
         if (!proxy) continue;
         const httpsAgent = getHttpAgent(proxy)
         const response = await firstValueFrom(
@@ -63,9 +62,9 @@ export class CronjobService {
           this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`)
         )
         const comments = response.data.comments
-        const newestComment = (comments??[]).reduce((latest, current) => {
+        const newestComment = (comments ?? []).reduce((latest, current) => {
           return current?.create_time > latest?.create_time ? current : latest;
-        });
+        }, null);
         const res: ICommentFromTiktok = {
           postId: link.postId,
           userIdComment: newestComment.user.uid,
