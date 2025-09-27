@@ -14,6 +14,7 @@ import { ICommentFromTiktok } from './cronjob.service.i';
 import { CommentEntity } from '../comments/entities/comment.entity';
 import { CommentsModule } from '../comments/comments.module';
 import { CommentsService } from '../comments/comments.service';
+import { SocketService } from 'src/infra/socket/socket.service';
 dayjs.extend(utc);
 
 @Injectable()
@@ -25,7 +26,8 @@ export class CronjobService {
     private readonly httpService: HttpService,
     private linkService: LinkService, 
     private redisService: RedisService,
-    private commentService: CommentsService
+    private commentService: CommentsService,
+    private readonly socketService: SocketService,
   ) { }
 
   @Cron(CronExpression.EVERY_5_SECONDS)
@@ -56,14 +58,11 @@ export class CronjobService {
         if (!proxy) continue;
         const httpsAgent = getHttpAgent(proxy)
         const response = await firstValueFrom(
-          // this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`, {
-          //   httpsAgent
-          // })
           this.httpService.get(`https://www.tiktok.com/api/comment/list/?aid=1988&aweme_id=${link.postId}&count=1000&device_id=7550562218283191570`)
         )
         const comments = response.data.comments
         const newestComment = comments.reduce((latest, current) => {
-          if (!latest) return current; // nếu lần đầu thì lấy current
+          if (!latest) return current; 
           return current.create_time > latest.create_time ? current : latest;
         }, null);
 
@@ -77,18 +76,22 @@ export class CronjobService {
             commentMessage: newestComment.text,
             commentCreatedAt: dayjs(newestComment?.create_time * 1000).utc().format('YYYY-MM-DD HH:mm:ss'),
           }
-          console.log(res)
+
           if (res) {
               const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
               const isExistKey = await this.redisService.checkAndUpdateKey(key)
               if (!isExistKey) {
-                await this.insertComment(res, link)
+                // await this.insertComment(res, link)
+                // this.socketService.emit('comment-group', message)
+                console.log(res)
+
+                this.socketService.emit('comment-tiktok', { ...res, userId: link.userId })
               }
           }
         }
 
       } catch (error) {
-        console.log(`Crawl comment with postId ${link.postId} Error.`, error)
+        console.log(`Crawl comment with postId ${link.postId} Error.`, error.message)
       } finally {
           await delay(5 * 1000)
       }

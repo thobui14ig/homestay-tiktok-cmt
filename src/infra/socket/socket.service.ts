@@ -7,17 +7,18 @@ export class SocketService {
     socket1: any = null;
 
     constructor(private configService: ConfigService) {
-        const ip = this.configService.get("IP_SOCKET_SERVER")
-        this.socket1 = this.createSocket(ip)
+        const ip = this.configService.get<string>('IP_SOCKET')
+        const port = this.configService.get<string>('PORT_SOCKET')
+        const url = `http://${ip}:${port}`
+        this.socket1 = this.createSocket(url)
     }
 
     emit(key: string, payload: any) {
-        // this.socket1.emit(key, payload)
-        console.log(payload)
+        this.socket1.emit(key, payload)
     }
 
-    createSocket(ip: string) {
-        const socket = io(`http://${ip}:9000`, {
+    createSocket(url: string) {
+        const socket = io(url, {
             secure: true,
         })
         socket.on('connect', () => {
