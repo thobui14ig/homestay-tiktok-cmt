@@ -78,7 +78,7 @@ export class CronjobService {
           }
 
           if (res) {
-              const key = `${link.id}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
+              const key = `${link.postId}_${res.commentCreatedAt.replaceAll("-", "").replaceAll(" ", "").replaceAll(":", "")}`
               const isExistKey = await this.redisService.checkAndUpdateKey(key)
               if (!isExistKey) {
                 // await this.insertComment(res, link)
